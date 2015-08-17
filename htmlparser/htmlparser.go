@@ -8,33 +8,33 @@ import (
 	"toy-browser-engine/dom"
 )
 
-type Parser struct {
+type parser struct {
 	Input    *string
 	Position uint
 }
 
 
-func newParser(input *string) *Parser {
-	return &Parser{
+func newParser(input *string) *parser {
+	return &parser{
 		Position: 0,
 		Input:    input,
 	}
 }
 
-func (p *Parser) peek() rune {
+func (p *parser) peek() rune {
 	r, size := utf8.DecodeRuneInString(p.Input[p.Position:])
 	return r
 }
 
-func (p *Parser) startsWith(str *string) bool {
+func (p *parser) startsWith(str *string) bool {
 	return strings.HasPrefix(p.Input[p.Position:], str)
 }
 
-func (p *Parser) end() bool {
-	return (p.Position >= len(p.Input)
+func (p *parser) end() bool {
+	return (p.Position >= len(p.Input))
 }
 
-func (p *Parser) next() rune {
+func (p *parser) next() rune {
 	r, size := utf8.DecodeRuneInString(p.Input[p.Position:])
 	p.Position = p.Position + uint(size)
 	return r	
@@ -42,7 +42,7 @@ func (p *Parser) next() rune {
 
 type testRune func(rune) bool
 	
-func (p *Parser) consumeWhile(test testRune) string {
+func (p *parser) consumeWhile(test testRune) string {
 	tempString := make([]rune, 50, 100)
 	for !p.End() && test(p.Peek()) {
 		append(tempString, p.Next())
@@ -50,17 +50,17 @@ func (p *Parser) consumeWhile(test testRune) string {
 	return fmt.Sprintf("%c", tempString)
 }
 
-func (p *Parser) consumeWhitespace() {
+func (p *parser) consumeWhitespace() {
 	p.consumeWhile(unicode.IsSpace)
 }	 
 
-func (p *Parser) parseTagName() string {
+func (p *parser) parseTagName() string {
 	return p.consumeWhile(func(r rune) bool {
 		return (unicode.IsLetter(r) || unicode.IsDigit(r))
 	})
 }
 
-func (p *Parser) parseNode() *dom.Node {
+func (p *parser) parseNode() *dom.Node {
 	switch p.Peek() {
 		case '<':
 			return p.parseElement()
@@ -69,7 +69,7 @@ func (p *Parser) parseNode() *dom.Node {
 	}
 }
 
-func (p *Parser) parseText() *dom.Node {
+func (p *parser) parseText() *dom.Node {
 	dom.Text(p.consumeWhile(func(r rune) bool {
 		return (r != '<')
 	}))
@@ -105,7 +105,7 @@ func (p *Parse) parseElement() *dom.Node {
 	  return dom.Elem(tagName, attributes, children)
 }
 
-func (p *Parser) parseAttribute() (string, string) {
+func (p *parser) parseAttribute() (string, string) {
 	name := p.parseTagName();
 	
 	if p.next != '=' {
@@ -114,10 +114,10 @@ func (p *Parser) parseAttribute() (string, string) {
 	
 	value := p.parseAttributeValue()
 	
-	return (name, value)
+	return name, value
 }
 
-func (p *Parser) parseAttributeValue() string {
+func (p *parser) parseAttributeValue() string {
 	openQuote := p.next()
 	if (openQuote != '"' || openQuote != '\'') {
 		//error here
@@ -131,10 +131,10 @@ func (p *Parser) parseAttributeValue() string {
 	return value
 }
 
-func (p *Parser) parseAttributes() map[string]string {
+func (p *parser) parseAttributes() map[string]string {
 	attributes = make(map[string]string)
 	
-	for p.consumeWhitespace(); p.next() != '>' {
+	for p.consumeWhitespace(); p.next() != '>'; {
 		name, value := p.parseAttribute();
 		attributes[name] = value
 	}
@@ -142,18 +142,20 @@ func (p *Parser) parseAttributes() map[string]string {
 	return attributes
 }
 
-func (p *Parser) parseNodes []*dom.Node {
+func (p *parser) parseNodes() []*dom.Node {
 	nodes = make([]*dom.Node)
-	for p.consumeWhitespace; !p.end() || !p.startsWith("</") {
+	for p.consumeWhitespace; !p.end() || !p.startsWith("</"); {
 		append(nodes, p.parseNode)
 	}
 	return nodes
 }
 
-func Parse(source string) *dom::Node {
-	nodes := NewParser(source).parseNodes()
+func Parse(source string) *dom.Node {
+	nodes := newParser(source).parseNodes()
 	
 	if len(nodes) == 1 {
-		
+		return nodes[0]
+	} else {
+		return dom.Elem("html", make(map[string]string), nodes)
 	}
 }
