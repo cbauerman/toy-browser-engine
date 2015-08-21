@@ -5,15 +5,15 @@ import (
 )
 
 func TestNodes(t *testing.T) {
-	PrettyPrint(Elem("root", nil, []*Node{
-		Text("Test01"),
-		Text("Test02"),
+	PrettyPrint(NewElementNode("root", nil, []Node{
+		NewTextNode("Test01"),
+		NewTextNode("Test02"),
 	}))
-	PrettyPrint(Elem("root", nil, []*Node{
-		Elem("Node01", nil, []*Node{
-			Text("Test01"),
-			Text("Test02"),
+	PrettyPrint(NewElementNode("root", nil, []Node{
+		NewElementNode("Node01", nil, []Node{
+			NewTextNode("Test01"),
+			NewTextNode("Test02"),
 		}),
-		Text("Test03"),
+		NewTextNode("Test03"),
 	}))
 }

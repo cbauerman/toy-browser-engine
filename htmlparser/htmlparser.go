@@ -1,6 +1,7 @@
 package htmlparser
 
 import (
+	"toy-browser-engine/dom"
 	"fmt"
 	"bufio"
 	"io"
@@ -49,43 +50,44 @@ func (p *parser) peek() rune {
 
 type testRune func(rune) bool
 
-func (p *parser) consumeWhile(test testRune) []rune {
+func (p *parser) consumeWhile(test testRune) string {
 	result := make([]rune, 0, 100)
 
 	for p.peek() != eof && test(p.peek()) {
+		//fmt.Printf("Reading %q\n", p.peek())
 		result = append(result, p.next())
 	}
 
 	p.input.UnreadRune()
 
-	return result
+	return string(result)
 }
 
 func (p *parser) consumeWhitespace() {
 	p.consumeWhile(unicode.IsSpace)
 }
 
-//func (p *parser) parseTagName() string {
-//	return p.consumeWhile(func(r rune) bool {
-//		return (unicode.IsLetter(r) || unicode.IsDigit(r))
-//	})
-//}
-//
-//func (p *parser) parseNode() *dom.Node {
-//	switch p.Peek() {
-//	case '<':
-//		return p.parseElement()
-//	default:
-//		return p.parseText()
-//	}
-//}
-//
-//func (p *parser) parseText() *dom.Node {
-//	dom.Text(p.consumeWhile(func(r rune) bool {
-//		return (r != '<')
-//	}))
-//}
-//
+func (p *parser) parseTagName() string {
+	return p.consumeWhile(func(r rune) bool {
+		return (unicode.IsLetter(r) || unicode.IsDigit(r))
+	})
+}
+
+func (p *parser) parseText() *dom.Text {
+	return dom.NewTextNode(p.consumeWhile(func(r rune) bool {
+		return (r != '<')
+	}))
+}
+
+// func (p *parser) parseNode() *dom.Node {
+// 	switch p.peek() {
+// 	case '<':
+// 		return p.parseElement()
+// 	default:
+// 		return p.parseText()
+// 	}
+// }
+
 //func (p *Parse) parseElement() *dom.Node {
 //	if p.next() != '<' {
 //		//error on missing '<'

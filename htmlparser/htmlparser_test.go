@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestParserConsumeWhile(t *testing.T) {
+func TestConsumeWhile(t *testing.T) {
 	stringStart := "----------"
 	stringEnd := "This is a test"
 	testString := fmt.Sprint(stringStart, stringEnd)
@@ -22,12 +22,44 @@ func TestParserConsumeWhile(t *testing.T) {
 		return true
 	})
 
-	if string(resultStart) != stringStart {
-		t.Errorf("%s is the not the same as %s", string(resultStart), stringStart)
+	if resultStart != stringStart {
+		t.Errorf("%s is not the same as %s", string(resultStart), stringStart)
 	}
 
-	if string(resultEnd) != stringEnd {
-		t.Errorf("%s is the not the same as %s", string(resultEnd), stringEnd)
+	if resultEnd != stringEnd {
+		t.Errorf("%s is not the same as %s", string(resultEnd), stringEnd)
 	}
 
+}
+
+func TestParseTagName(t * testing.T){
+	tagName := "1897fadhusdas9fha4afbwj"
+	nonTagName := "$&(@*#("
+	
+	testString := fmt.Sprintf(tagName, nonTagName)
+	
+	input := strings.NewReader(testString)
+	p := newParser(input)
+	
+	tagNameResult := p.parseTagName()
+	
+	if tagNameResult != tagName{
+		t.Errorf("%s is not the same as %s", tagNameResult, tagName)
+	}
+}
+
+func TestParseText(t * testing.T){
+	text := "1897fadhusdas9fha4afbwj"
+	nonText := "<test>"
+	
+	testString := fmt.Sprint(text, nonText)
+	
+	input := strings.NewReader(testString)
+	p := newParser(input)
+	
+	textResult := p.parseText()
+	
+	if textResult.Value != text {
+		t.Errorf("%s is not the same as %s", textResult.Value, text)
+	}
 }

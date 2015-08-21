@@ -4,53 +4,71 @@ import (
 	"fmt"
 )
 
-type Node struct {
-	Children []*Node
-	//for now type is decided by the data
-	NodeType interface{}
+type NodeType int
+
+const (
+	TextNode NodeType = iota
+	ElementNode
+)
+
+type Node interface {
+	GetNodeType() NodeType
 }
 
-type ElementData struct {
+type Text struct {
+	Children []Node
+	Value    string
+}
+
+func (t Text) GetNodeType() NodeType {
+	return TextNode
+}
+
+type Element struct {
+	Children   []Node
 	TagName    string
 	Attributes map[string]string
 }
 
-func Text(data string) *Node {
-	return &Node{
+func (e Element) GetNodeType() NodeType {
+	return ElementNode
+}
+
+func NewTextNode(data string) *Text {
+	return &Text{
 		Children: nil,
-		NodeType: data,
+		Value:    data,
 	}
 }
 
-func Elem(name string, attributes map[string]string, children []*Node) *Node {
-	return &Node{
-		Children: children,
-		NodeType: &ElementData{
-			TagName:    name,
-			Attributes: attributes,
-		},
+func NewElementNode(name string, attributes map[string]string, children []Node) *Element {
+	return &Element{
+		Children:   children,
+		TagName:    name,
+		Attributes: attributes,
 	}
 }
 
-func PrettyPrint(tree *Node) {
+func PrettyPrint(tree Node) {
 	prettyPrintHelper(tree, 0, false)
 }
 
-func prettyPrintHelper(tree *Node, indent int, last bool) {
-	switch tree.NodeType.(type) {
+func prettyPrintHelper(tree Node, indent int, last bool) {
+	switch tree.GetNodeType() {
 
-	case string:
-		printIndent(fmt.Sprintf("Text Node : %s\n", tree.NodeType), indent, last)
-	case *ElementData:
-		elem := tree.NodeType.(*ElementData)
+	case TextNode:
+		text := tree.(*Text)
+		printIndent(fmt.Sprintf("Text Node : %s\n", text.Value), indent, last)
+	case ElementNode:
+		elem := tree.(*Element)
 		printIndent(fmt.Sprintf("Elem Node with tag : %s\n", elem.TagName), indent, last)
-		if tree.Children != nil {
-			for index, child := range tree.Children {
-				prettyPrintHelper(child, indent+1, (index == len(tree.Children)-1))
+		if elem.Children != nil {
+			for index, child := range elem.Children {
+				prettyPrintHelper(child, indent+1, (index == len(elem.Children)-1))
 			}
 		}
 	default:
-		printIndent(fmt.Sprintf("Unknown Node of Type %T\n", tree.NodeType), indent, last)
+		printIndent(fmt.Sprintf("Unknown Node: %d", tree.GetNodeType()), indent, last)
 	}
 }
 
