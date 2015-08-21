@@ -2,43 +2,62 @@ package htmlparser
 
 import (
 	"fmt"
+	"bufio"
 	"io"
-	"text/scanner"
 	"unicode"
 )
 
 type parser struct {
-	input *scanner.Scanner
-	next  rune
-}
-
-func scannerError(s *scanner.Scanner, msg string) {
-
-	fmt.Println(msg)
-
+	input      *bufio.Reader
+	error      func(p *parser, msg string)
+	errorCount uint
 }
 
 func newParser(input io.Reader) *parser {
-	var s scanner.Scanner
-	s.Init(input)
-	s.Error = scannerError
-	s.Mode = scanner.ScanChars
 
 	p := &parser{
-		input: &s,
-		next:  s.Scan(),
+		input:      bufio.NewReader(input),
+		errorCount: 0,
+		error: func(p *parser, msg string) {
+			fmt.Printf("Error in Parser: %s", msg)
+		},
 	}
 	return p
+}
+
+const eof = -2
+
+func (p *parser) next() rune {
+	next, _, err := p.input.ReadRune()
+
+	if err != nil && err == io.EOF {
+		return eof
+	} else if err != nil {
+		p.errorCount++
+		if p.error != nil {
+			p.error(p, err.Error())
+		}
+	}
+	return next
+}
+
+func (p *parser) peek() rune {
+	next := p.next()
+	p.input.UnreadRune()
+	return next
 }
 
 type testRune func(rune) bool
 
 func (p *parser) consumeWhile(test testRune) []rune {
 	result := make([]rune, 0, 100)
-	for p.next != scanner.EOF && test(p.next) {
-		result = append(result, p.next)
-		fmt.Printf("Parser Next(after):%q\n", p.next)
+
+	for p.peek() != eof && test(p.peek()) {
+		result = append(result, p.next())
 	}
+
+	p.input.UnreadRune()
+
 	return result
 }
 
