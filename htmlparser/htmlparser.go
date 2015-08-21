@@ -1,10 +1,10 @@
 package htmlparser
 
 import (
-	"toy-browser-engine/dom"
-	"fmt"
 	"bufio"
+	"fmt"
 	"io"
+	"toy-browser-engine/dom"
 	"unicode"
 )
 
@@ -48,6 +48,10 @@ func (p *parser) peek() rune {
 	return next
 }
 
+func (p *parser) startsWith(str string) bool {
+	return true
+}
+
 type testRune func(rune) bool
 
 func (p *parser) consumeWhile(test testRune) string {
@@ -58,7 +62,7 @@ func (p *parser) consumeWhile(test testRune) string {
 		result = append(result, p.next())
 	}
 
-	p.input.UnreadRune()
+	//p.input.UnreadRune()
 
 	return string(result)
 }
@@ -67,108 +71,118 @@ func (p *parser) consumeWhitespace() {
 	p.consumeWhile(unicode.IsSpace)
 }
 
-func (p *parser) parseTagName() string {
-	return p.consumeWhile(func(r rune) bool {
-		return (unicode.IsLetter(r) || unicode.IsDigit(r))
-	})
-}
-
 func (p *parser) parseText() *dom.Text {
 	return dom.NewTextNode(p.consumeWhile(func(r rune) bool {
 		return (r != '<')
 	}))
 }
 
-// func (p *parser) parseNode() *dom.Node {
-// 	switch p.peek() {
-// 	case '<':
-// 		return p.parseElement()
-// 	default:
-// 		return p.parseText()
-// 	}
-// }
+func (p *parser) parseTagName() string {
+	return p.consumeWhile(func(r rune) bool {
+		return (unicode.IsLetter(r) || unicode.IsDigit(r))
+	})
+}
 
-//func (p *Parse) parseElement() *dom.Node {
-//	if p.next() != '<' {
-//		//error on missing '<'
-//	}
-//
-//	tagName := p.parseTagName()
-//	attributes := p.parseAttributes()
-//
-//	if p.next() != '>' {
-//		//error on missing '>'
-//	}
-//
-//	children := p.parseNodes()
-//
-//	if p.next() != '<' {
-//
-//	}
-//	if p.next() != '/' {
-//
-//	}
-//	if p.parseTagName != tagName {
-//
-//	}
-//	if p.next() != '>' {
-//
-//	}
-//
-//	return dom.Elem(tagName, attributes, children)
-//}
-//
-//func (p *parser) parseAttribute() (string, string) {
-//	name := p.parseTagName()
-//
-//	if p.next != '=' {
-//
-//	}
-//
-//	value := p.parseAttributeValue()
-//
-//	return name, value
-//}
-//
-//func (p *parser) parseAttributeValue() string {
-//	openQuote := p.next()
-//	if openQuote != '"' || openQuote != '\'' {
-//		//error here
-//	}
-//	value := p.consumeWhile(func(r rune) bool {
-//		return r != openQuote
-//	})
-//	if p.next() != openQuote {
-//		//error here
-//	}
-//	return value
-//}
-//
-//func (p *parser) parseAttributes() map[string]string {
-//	attributes = make(map[string]string)
-//
-//	for p.consumeWhitespace(); p.next() != '>'; {
-//		name, value := p.parseAttribute()
-//		attributes[name] = value
-//	}
-//
-//	return attributes
-//}
-//
-//func (p *parser) parseNodes() []*dom.Node {
-//	nodes = make([]*dom.Node)
-//	for p.consumeWhitespace; !p.end() || !p.startsWith("</"); {
-//		append(nodes, p.parseNode)
-//	}
-//	return nodes
-//}
-//
-//func Parse(source []byte) *dom.Node {
-//	nodes := newParser(source).parseNodes()
-//
-//	if len(nodes) == 1 {
-//		return nodes[0]
-//	} else {
-//		return dom.Elem("html", make(map[string]string), nodes)
-//	}
-//}
+func (p *parser) parseAttributeValue() string {
+	openQuote := p.next()
+	if openQuote != '"' || openQuote != '\'' {
+		//error here
+	}
+	value := p.consumeWhile(func(r rune) bool {
+		return r != openQuote
+	})
+	if p.next() != openQuote {
+		//error here
+	}
+	return value
+}
+
+func (p *parser) parseAttribute() (string, string) {
+	name := p.parseTagName()
+
+	if p.next() != '=' {
+		//need an error here
+	}
+
+	value := p.parseAttributeValue()
+
+	return name, value
+}
+
+func (p *parser) parseAttributes() map[string]string {
+	attributes := make(map[string]string)
+
+	for  {
+		p.consumeWhitespace() 
+		if p.peek() == '>' {
+			break
+		}
+		
+		name, value := p.parseAttribute()
+		attributes[name] = value
+	}
+
+	return attributes
+}
+
+func (p *parser) parseElement() dom.Node {
+	if p.next() != '<' {
+		//error on missing '<'
+	}
+
+	tagName := p.parseTagName()
+	attributes := p.parseAttributes()
+
+	if p.next() != '>' {
+		//error on missing '>'
+	}
+
+	children := p.parseNodes()
+
+	if p.next() != '<' {
+		//errors a plenty
+	}
+	if p.next() != '/' {
+		//errors a plenty
+	}
+	if p.parseTagName() != tagName {
+		//errors a plenty
+	}
+	if p.next() != '>' {
+		//errors a plenty
+	}
+
+	return dom.NewElementNode(tagName, attributes, children)
+}
+
+
+func (p *parser) parseNode() dom.Node {
+	switch p.peek() {
+	case '<':
+		return p.parseElement()
+	default:
+		return p.parseText()
+	}
+}
+
+func (p *parser) parseNodes() []dom.Node {
+	nodes := make([]dom.Node, 0)
+	for {
+		 p.consumeWhitespace()
+		 if p.peek() == eof || p.startsWith("</") {
+			 break
+		 }
+		nodes = append(nodes, p.parseNode())
+	}
+	return nodes
+}
+
+func Parse(source io.Reader) dom.Node {
+	nodes := newParser(source).parseNodes()
+
+	if len(nodes) == 1 {
+		return nodes[0]
+	} else {
+		return dom.NewElementNode("html", make(map[string]string), nodes)
+	}
+}
