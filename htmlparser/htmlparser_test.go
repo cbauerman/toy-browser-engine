@@ -31,6 +31,7 @@ func TestConsumeWhile(t *testing.T) {
 	if resultEnd != stringEnd {
 		t.Errorf("%s is not the same as %s", string(resultEnd), stringEnd)
 	}
+	fmt.Println("ParseConsumeWhile Complete!")
 
 }
 
@@ -48,6 +49,7 @@ func TestParseTagName(t *testing.T) {
 	if tagNameResult != tagName {
 		t.Errorf("%s is not the same as %s", tagNameResult, tagName)
 	}
+	fmt.Println("ParseTagName Complete!")
 }
 
 func TestParseText(t *testing.T) {
@@ -64,6 +66,7 @@ func TestParseText(t *testing.T) {
 	if textResult.Value != text {
 		t.Errorf("%s is not the same as %s", textResult.Value, text)
 	}
+	fmt.Println("ParseTest Complete!")
 }
 
 func TestParseAttributeValue(t *testing.T) {
@@ -81,6 +84,7 @@ func TestParseAttributeValue(t *testing.T) {
 			t.Errorf("parseAttribute value on %s == %s, want %s", c.in, got, c.want)
 		}
 	}
+	fmt.Println("ParseAttributeValue Complete!")
 }
 
 func TestParseAttribute(t *testing.T) {
@@ -98,6 +102,7 @@ func TestParseAttribute(t *testing.T) {
 			t.Errorf("parseAttribute on %s == (%s, %s) want (%s, %s)", c.in, got1, got2, c.want1, c.want2)
 		}
 	}
+	fmt.Println("ParseAttribute Complete!")
 }
 
 func TestParseAttributes(t *testing.T) {
@@ -128,6 +133,7 @@ func TestParseAttributes(t *testing.T) {
 			t.Fail()
 		}
 	}
+	fmt.Println("ParseAttributes Complete!")
 }
 
 func TestParseElement(t *testing.T) {
@@ -145,7 +151,7 @@ func TestParseElement(t *testing.T) {
 		got := p.parseElement()
 		
 		if got != c.want {
-			t.Logf("Failure of parserElement on %s", c.in)
+			t.Logf("Failure of parseElement on %s", c.in)
 			t.Logf("Expected:\n")
 			dom.PrettyPrint(c.want)
 			t.Logf("Got:\n")
@@ -153,4 +159,5 @@ func TestParseElement(t *testing.T) {
 			t.Fail()
 		}
 	}
+	fmt.Println("ParseElement Complete!")
 }

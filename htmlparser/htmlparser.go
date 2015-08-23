@@ -1,27 +1,28 @@
 package htmlparser
 
 import (
-	"bufio"
-	"fmt"
 	"io"
-	"toy-browser-engine/dom"
+	"fmt"
 	"unicode"
+	"toy-browser-engine/dom"
 )
 
 type parser struct {
-	input      *bufio.Reader
+	input      io.RuneReader
 	error      func(p *parser, msg string)
 	errorCount uint
+	buf        []rune
 }
 
-func newParser(input io.Reader) *parser {
+func newParser(input io.RuneReader) *parser {
 
 	p := &parser{
-		input:      bufio.NewReader(input),
+		input:     input,
 		errorCount: 0,
 		error: func(p *parser, msg string) {
 			fmt.Printf("Error in Parser: %s", msg)
 		},
+		buf: make([]rune, 0),
 	}
 	return p
 }
@@ -29,7 +30,16 @@ func newParser(input io.Reader) *parser {
 const eof = -2
 
 func (p *parser) next() rune {
-	next, _, err := p.input.ReadRune()
+	
+	var next rune
+	err := error(nil)
+	
+	if len(p.buf) > 0 {
+		next = p.buf[0]
+		p.buf = p.buf[1:]
+	} else {
+		next, _, err = p.input.ReadRune()
+	}
 
 	if err != nil && err == io.EOF {
 		return eof
@@ -44,12 +54,22 @@ func (p *parser) next() rune {
 
 func (p *parser) peek() rune {
 	next := p.next()
-	p.input.UnreadRune()
+
+	p.buf = append(p.buf, next)	
 	return next
 }
 
 func (p *parser) startsWith(str string) bool {
-	return true
+	
+	readRunes := make([]rune, len(str))
+	
+	for i := 0; i < len(readRunes); i++ {
+		readRunes[i] = p.next()
+	}
+	for i := 0; i < len(readRunes); i++ {
+		p.buf = append(p.buf, readRunes[i])
+	}
+	return (string(readRunes) == str)
 }
 
 type testRune func(rune) bool
@@ -58,12 +78,9 @@ func (p *parser) consumeWhile(test testRune) string {
 	result := make([]rune, 0, 100)
 
 	for p.peek() != eof && test(p.peek()) {
-		//fmt.Printf("Reading %q\n", p.peek())
+		fmt.Printf("Reading %q\n", p.peek())
 		result = append(result, p.next())
 	}
-
-	//p.input.UnreadRune()
-
 	return string(result)
 }
 
@@ -136,6 +153,8 @@ func (p *parser) parseElement() dom.Node {
 	if p.next() != '>' {
 		//error on missing '>'
 	}
+	
+	fmt.Println("Parsing children")
 
 	children := p.parseNodes()
 
@@ -177,7 +196,7 @@ func (p *parser) parseNodes() []dom.Node {
 	return nodes
 }
 
-func Parse(source io.Reader) dom.Node {
+func Parse(source io.RuneReader) dom.Node {
 	nodes := newParser(source).parseNodes()
 
 	if len(nodes) == 1 {
