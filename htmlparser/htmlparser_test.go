@@ -150,7 +150,7 @@ func TestParseElement(t *testing.T) {
 		p := newParser(strings.NewReader(c.in))
 		got := p.parseElement()
 		
-		if got != c.want {
+		if reflect.DeepEqual(got, c.want) {
 			t.Logf("Failure of parseElement on %s", c.in)
 			t.Logf("Expected:\n")
 			dom.PrettyPrint(c.want)

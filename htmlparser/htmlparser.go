@@ -78,7 +78,7 @@ func (p *parser) consumeWhile(test testRune) string {
 	result := make([]rune, 0, 100)
 
 	for p.peek() != eof && test(p.peek()) {
-		fmt.Printf("Reading %q\n", p.peek())
+		//fmt.Printf("Reading %q\n", p.peek())
 		result = append(result, p.next())
 	}
 	return string(result)

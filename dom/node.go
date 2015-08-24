@@ -62,6 +62,9 @@ func prettyPrintHelper(tree Node, indent int, last bool) {
 	case ElementNode:
 		elem := tree.(*Element)
 		printIndent(fmt.Sprintf("Elem Node with tag : %s\n", elem.TagName), indent, last)
+		for k, c := range elem.Attributes {
+			printIndent(fmt.Sprintf("%s : %s\n", k, c), indent + 1, last)
+		}
 		if elem.Children != nil {
 			for index, child := range elem.Children {
 				prettyPrintHelper(child, indent+1, (index == len(elem.Children)-1))
